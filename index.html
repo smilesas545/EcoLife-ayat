@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoLife | Sustainable Living Guide</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #2E8B57;
+            --secondary: #3CB371;
+            --light: #F5F5F5;
+            --dark: #1A3C2E;
+            --accent: #FFD700;
+            --error: #e74c3c;
+            --success: #27ae60;
+        }
+
+        body {
+            line-height: 1.6;
+            color: #333;
+            background-color: var(--light);
+        }
+
+        /* Header & Navigation */
+        header {
+            background-color: white;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+        }
+
+        .logo i {
+            margin-right: 10px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links li {
+            margin-left: 25px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .mobile-menu {
+            display: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        /* Auth Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .auth-modal {
+            background-color: white;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 450px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            transform: translateY(-30px);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .auth-modal {
+            transform: translateY(0);
+        }
+
+        .auth-modal h2 {
+            color: var(--dark);
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: #777;
+            transition: all 0.3s;
+        }
+
+        .auth-tab.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            margin-bottom: -2px;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .auth-btn:hover {
+            background-color: var(--secondary);
+        }
+
+        .auth-error {
+            background-color: #fee;
+            color: var(--error);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .auth-error.active {
+            display: block;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #777;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(rgba(46, 139, 87, 0.8), rgba(46, 139, 87, 0.9)), url('https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 100px 0;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto 30px;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--accent);
+            color: var(--dark);
+            padding: 12px 30px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #ffed4e;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-secondary {
+            background-color: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--light);
+        }
+
+        /* Sections */
+        section {
+            padding: 80px 0;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            color: var(--dark);
+            margin-bottom: 15px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-title h2::after {
+            content: '';
+            position: absolute;
+            width: 70px;
+            height: 4px;
+            background-color: var(--primary);
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Tips Section */
+        .tips-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .tip-card {
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s;
+        }
+
+        .tip-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .tip-icon {
+            background-color: var(--secondary);
+            color: white;
+            font-size: 2.5rem;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .tip-content {
+            padding: 25px;
+        }
+
+        .tip-content h3 {
+            color: var(--dark);
+            margin-bottom: 15px;
+        }
+
+        /* Stats Section */
+        .stats {
+            background-color: var(--dark);
+            color: white;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            text-align: center;
+        }
+
+        .stat-box {
+            padding: 30px;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        /* Resources Section */
+        .resources-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        .resource-card {
+            flex: 1;
+            min-width: 250px;
+            max-width: 350px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+
+        .resource-card i {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        /* Challenge Section */
+        .challenge {
+            background-color: #f0f9f4;
+            text-align: center;
+        }
+
+        .challenge-box {
+            background-color: white;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .challenge-box h3 {
+            color: var(--dark);
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            margin: 30px 0;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 1s;
+        }
+
+        .challenge-btn {
+            margin-top: 20px;
+        }
+
+        /* User Actions Section */
+        .actions-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 40px;
+        }
+
+        .action-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+
+        .action-card h3 {
+            color: var(--dark);
+            margin-bottom: 15px;
+        }
+
+        .action-btn {
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 60px 0 30px;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-column h3 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: var(--accent);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: #ddd;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent);
+        }
+
+        .social-icons {
+            display: flex;
+            margin-top: 20px;
+        }
+
+        .social-icons a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            margin-right: 10px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .social-icons a:hover {
+            background-color: var(--primary);
+            transform: translateY(-5px);
+        }
+
+        .copyright {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background-color: white;
+                flex-direction: column;
+                padding: 20px;
+                box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .nav-links li {
+                margin: 10px 0;
+            }
+
+            .mobile-menu {
+                display: block;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            section {
+                padding: 60px 0;
+            }
+
+            .auth-modal {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header & Navigation -->
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">
+                    <i class="fas fa-leaf"></i>
+                    EcoLife
+                </div>
+                <ul class="nav-links">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#tips">Tips</a></li>
+                    <li><a href="#stats">Impact</a></li>
+                    <li><a href="#resources">Resources</a></li>
+                    <li><a href="#challenge">Challenge</a></li>
+                    <li id="authSection">
+                        <div class="user-info" style="display: none;">
+                            <span id="userEmail"></span>
+                            <div class="user-avatar" id="userAvatar"></div>
+                            <button class="btn btn-secondary" id="logoutBtn">Logout</button>
+                        </div>
+                        <button class="btn" id="loginBtn">Login / Sign Up</button>
+                    </li>
+                </ul>
+                <div class="mobile-menu">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="authModal">
+        <div class="auth-modal">
+            <button class="close-modal" id="closeModal">&times;</button>
+            <h2>Welcome to EcoLife</h2>
+            
+            <div class="auth-tabs">
+                <div class="auth-tab active" data-tab="login">Login</div>
+                <div class="auth-tab" data-tab="signup">Sign Up</div>
+            </div>
+            
+            <div class="auth-error" id="authError"></div>
+            
+            <form class="auth-form active" id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="auth-btn">Login</button>
+            </form>
+            
+            <form class="auth-form" id="signupForm">
+                <div class="form-group">
+                    <label for="signupName">Full Name</label>
+                    <input type="text" id="signupName" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Password (min. 6 characters)</label>
+                    <input type="password" id="signupPassword" minlength="6" required>
+                </div>
+                <button type="submit" class="auth-btn">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="container">
+            <h1>Live Green, Live Better</h1>
+            <p>Discover practical sustainable living tips that help reduce your environmental footprint while saving money and improving your wellbeing. Start your eco-friendly journey today.</p>
+            <a href="#tips" class="btn">Explore Tips</a>
+            <button class="btn btn-secondary" id="heroLogin" style="margin-left: 15px;">Join Our Community</button>
+        </div>
+    </section>
+
+    <!-- Tips Section -->
+    <section id="tips">
+        <div class="container">
+            <div class="section-title">
+                <h2>Sustainable Living Tips</h2>
+                <p>Simple changes that make a big difference</p>
+            </div>
+            <div class="tips-container">
+                <div class="tip-card">
+                    <div class="tip-icon">
+                        <i class="fas fa-recycle"></i>
+                    </div>
+                    <div class="tip-content">
+                        <h3>Reduce, Reuse, Recycle</h3>
+                        <p>Follow the waste hierarchy: reduce consumption first, reuse items when possible, and recycle what's left. Composting organic waste reduces landfill methane emissions.</p>
+                    </div>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-icon">
+                        <i class="fas fa-tint"></i>
+                    </div>
+                    <div class="tip-content">
+                        <h3>Conserve Water</h3>
+                        <p>Fix leaks promptly, install low-flow fixtures, take shorter showers, and collect rainwater for gardening. Every drop saved helps preserve this precious resource.</p>
+                    </div>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="tip-content">
+                        <h3>Energy Efficiency</h3>
+                        <p>Switch to LED bulbs, unplug electronics when not in use, use smart power strips, and consider solar panels. Small changes can cut energy bills by 25%.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Actions Section (Visible when logged in) -->
+            <div id="userActions" style="display: none;">
+                <div class="section-title">
+                    <h2>Track Your Progress</h2>
+                    <p>Log your sustainable actions and contribute to our community impact</p>
+                </div>
+                <div class="actions-container">
+                    <div class="action-card">
+                        <h3>Log Plastic Saved</h3>
+                        <p>Record how many plastic items you avoided today</p>
+                        <input type="number" id="plasticCount" placeholder="Number of items" min="0" style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px;">
+                        <button class="btn action-btn" id="logPlastic">Log Plastic Saved</button>
+                    </div>
+                    <div class="action-card">
+                        <h3>Log Water Saved</h3>
+                        <p>Record liters of water you conserved today</p>
+                        <input type="number" id="waterSavedCount" placeholder="Liters saved" min="0" step="0.1" style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px;">
+                        <button class="btn action-btn" id="logWater">Log Water Saved</button>
+                    </div>
+                    <div class="action-card">
+                        <h3>Share Your Tip</h3>
+                        <p>Share your own sustainable living tip with the community</p>
+                        <textarea id="userTip" placeholder="Your sustainable tip..." rows="3" style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; resize: vertical;"></textarea>
+                        <button class="btn action-btn" id="submitTip">Submit Tip</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats" id="stats">
+        <div class="container">
+            <div class="section-title">
+                <h2>Our Collective Impact</h2>
+                <p>Small actions add up to big changes</p>
+            </div>
+            <div class="stats-container">
+                <div class="stat-box">
+                    <div class="stat-number" id="plasticReduced">0</div>
+                    <p>Plastic items saved</p>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="co2Reduced">0</div>
+                    <p>Kilograms of CO2 reduced</p>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="waterSaved">0</div>
+                    <p>Liters of water saved</p>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="treesPlanted">0</div>
+                    <p>Trees planted this year</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Resources Section -->
+    <section id="resources">
+        <div class="container">
+            <div class="section-title">
+                <h2>Eco-Friendly Resources</h2>
+                <p>Tools and information to support your journey</p>
+            </div>
+            <div class="resources-container">
+                <div class="resource-card">
+                    <i class="fas fa-shopping-bag"></i>
+                    <h3>Sustainable Products</h3>
+                    <p>Discover eco-friendly alternatives for everyday items from verified sustainable brands.</p>
+                </div>
+                <div class="resource-card">
+                    <i class="fas fa-book"></i>
+                    <h3>Educational Guides</h3>
+                    <p>Learn more about climate change, biodiversity, and sustainable practices.</p>
+                </div>
+                <div class="resource-card">
+                    <i class="fas fa-users"></i>
+                    <h3>Community</h3>
+                    <p>Connect with like-minded individuals in local sustainability groups.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Challenge Section -->
+    <section class="challenge" id="challenge">
+        <div class="container">
+            <div class="section-title">
+                <h2>30-Day Green Challenge</h2>
+                <p>Take one small step each day towards sustainable living</p>
+            </div>
+            <div class="challenge-box">
+                <h3>Complete daily challenges to build eco-friendly habits</h3>
+                <p>Join thousands of participants in our monthly sustainability challenge. Track your progress and earn badges for completing actions!</p>
+                
+                <div class="progress-bar">
+                    <div class="progress" id="challengeProgress"></div>
+                </div>
+                
+                <p id="challengeStatus">Start your challenge today!</p>
+                <button class="btn challenge-btn" id="joinChallenge">Join Challenge</button>
+                <div id="communityTips" style="margin-top: 30px; display: none;">
+                    <h4>Community Tips</h4>
+                    <div id="tipsList"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-container">
+                <div class="footer-column">
+                    <h3>EcoLife</h3>
+                    <p>Making sustainable living accessible, practical, and rewarding for everyone.</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h3>Quick Links</h3>
+                    <ul class="footer-links">
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#tips">Sustainable Tips</a></li>
+                        <li><a href="#stats">Our Impact</a></li>
+                        <li><a href="#resources">Resources</a></li>
+                        <li><a href="#challenge">30-Day Challenge</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Contact Us</h3>
+                    <ul class="footer-links">
+                        <li><i class="fas fa-envelope"></i> info@ecolife.example.com</li>
+                        <li><i class="fas fa-phone"></i> +1 (555) 123-4567</li>
+                        <li><i class="fas fa-map-marker-alt"></i> 123 Green Street, Earth</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2023 EcoLife. All rights reserved. | Designed with <i class="fas fa-heart" style="color:#FFD700;"></i> for our planet</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Firebase Configuration - REPLACE WITH YOUR ACTUAL CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyDEXAMPLEKEY1234567890",
+            authDomain: "ecolife-project.firebaseapp.com",
+            projectId: "ecolife-project",
+            storageBucket: "ecolife-project.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abc123def456"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // DOM Elements
+        const authModal = document.getElementById('authModal');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const closeModal = document.getElementById('closeModal');
+        const authTabs = document.querySelectorAll('.auth-tab');
+        const authForms = document.querySelectorAll('.auth-form');
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const authError = document.getElementById('authError');
+        const userInfo = document.querySelector('.user-info');
+        const userEmail = document.getElementById('userEmail');
+        const userAvatar = document.getElementById('userAvatar');
+        const heroLoginBtn = document.getElementById('heroLogin');
+        const userActions = document.getElementById('userActions');
+        const logPlasticBtn = document.getElementById('logPlastic');
+        const logWaterBtn = document.getElementById('logWater');
+        const submitTipBtn = document.getElementById('submitTip');
+        const communityTips = document.getElementById('communityTips');
+        const tipsList = document.getElementById('tipsList');
+
+        // Global variables
+        let currentUser = null;
+        let communityStats = {
+            plastic: 1245678,
+            co2: 892345,
+            water: 3567890,
+            trees: 56789
+        };
+
+        // Auth Tab Switching
+        authTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // Update active tab
+                authTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Show corresponding form
+                authForms.forEach(form => {
+                    form.classList.remove('active');
+                    if (form.id === `${tabId}Form`) {
+                        form.classList.add('active');
+                    }
+                });
+                
+                // Clear any error messages
+                authError.classList.remove('active');
+                authError.textContent = '';
+            });
+        });
+
+        // Open Modal
+        function openAuthModal() {
+            authModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close Modal
+        function closeAuthModal() {
+            authModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            authError.classList.remove('active');
+            authError.textContent = '';
+        }
+
+        // Login Form Submission
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                currentUser = userCredential.user;
+                closeAuthModal();
+                updateUIForUser();
+                showMessage('Welcome back to EcoLife!', 'success');
+            } catch (error) {
+                authError.textContent = error.message;
+                authError.classList.add('active');
+            }
+        });
+
+        // Signup Form Submission
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                currentUser = userCredential.user;
+                
+                // Save user data to Firestore
+                await db.collection('users').doc(currentUser.uid).set({
+                    name: name,
+                    email: email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    plasticSaved: 0,
+                    waterSaved: 0,
+                    challengeProgress: 0
+                });
+                
+                closeAuthModal();
+                updateUIForUser();
+                showMessage('Welcome to EcoLife! Your account has been created.', 'success');
+            } catch (error) {
+                authError.textContent = error.message;
+                authError.classList.add('active');
+            }
+        });
+
+        // Logout
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await auth.signOut();
+                currentUser = null;
+                updateUIForUser();
+                showMessage('You have been logged out.', 'info');
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        });
+
+        // Update UI based on auth state
+        function updateUIForUser() {
+            if (currentUser) {
+                // User is logged in
+                loginBtn.style.display = 'none';
+                userInfo.style.display = 'flex';
+                userEmail.textContent = currentUser.email;
+                userAvatar.textContent = currentUser.email.charAt(0).toUpperCase();
+                userActions.style.display = 'block';
+                communityTips.style.display = 'block';
+                loadUserData();
+                loadCommunityTips();
+                updateCommunityStats();
+            } else {
+                // User is logged out
+                loginBtn.style.display = 'block';
+                userInfo.style.display = 'none';
+                userActions.style.display = 'none';
+                communityTips.style.display = 'none';
+            }
+        }
+
+        // Load user data from Firestore
+        async function loadUserData() {
+            if (!currentUser) return;
+            
+            try {
+                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    console.log('User data loaded:', userData);
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+
+        // Log plastic saved
+        logPlasticBtn.addEventListener('click', async () => {
+            if (!currentUser) {
+                showMessage('Please login to track your progress', 'error');
+                return;
+            }
+            
+            const plasticCount = parseInt(document.getElementById('plasticCount').value);
+            if (isNaN(plasticCount) || plasticCount <= 0) {
+                showMessage('Please enter a valid number', 'error');
+                return;
+            }
+            
+            try {
+                // Update user's plastic saved
+                const userRef = db.collection('users').doc(currentUser.uid);
+                await userRef.update({
+                    plasticSaved: firebase.firestore.FieldValue.increment(plasticCount)
+                });
+                
+                // Update community stats
+                await db.collection('stats').doc('community').update({
+                    plastic: firebase.firestore.FieldValue.increment(plasticCount)
+                });
+                
+                // Update UI
+                communityStats.plastic += plasticCount;
+                updateCommunityStats();
+                document.getElementById('plasticCount').value = '';
+                showMessage(`Great job! You saved ${plasticCount} plastic items!`, 'success');
+            } catch (error) {
+                console.error('Error logging plastic:', error);
+                showMessage('Error saving your action', 'error');
+            }
+        });
+
+        // Log water saved
+        logWaterBtn.addEventListener('click', async () => {
+            if (!currentUser) {
+                showMessage('Please login to track your progress', 'error');
+                return;
+            }
+            
+            const waterCount = parseFloat(document.getElementById('waterSavedCount').value);
+            if (isNaN(waterCount) || waterCount <= 0) {
+                showMessage('Please enter a valid number', 'error');
+                return;
+            }
+            
+            try {
+                // Update user's water saved
+                const userRef = db.collection('users').doc(currentUser.uid);
+                await userRef.update({
+                    waterSaved: firebase.firestore.FieldValue.increment(waterCount)
+                });
+                
+                // Update community stats
+                await db.collection('stats').doc('community').update({
+                    water: firebase.firestore.FieldValue.increment(waterCount)
+                });
+                
+                // Update UI
+                communityStats.water += waterCount;
+                updateCommunityStats();
+                document.getElementById('waterSavedCount').value = '';
+                showMessage(`Excellent! You saved ${waterCount} liters of water!`, 'success');
+            } catch (error) {
+                console.error('Error logging water:', error);
+                showMessage('Error saving your action', 'error');
+            }
+        });
+
+        // Submit tip
+        submitTipBtn.addEventListener('click', async () => {
+            if (!currentUser) {
+                showMessage('Please login to share tips', 'error');
+                return;
+            }
+            
+            const tip = document.getElementById('userTip').value.trim();
+            if (tip.length < 10) {
+                showMessage('Please write a longer tip (at least 10 characters)', 'error');
+                return;
+            }
+            
+            try {
+                // Save tip to Firestore
+                await db.collection('tips').add({
+                    text: tip,
+                    userId: currentUser.uid,
+                    userEmail: currentUser.email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    likes: 0
+                });
+                
+                // Clear input and update UI
+                document.getElementById('userTip').value = '';
+                showMessage('Thank you for sharing your tip!', 'success');
+                loadCommunityTips();
+            } catch (error) {
+                console.error('Error submitting tip:', error);
+                showMessage('Error submitting your tip', 'error');
+            }
+        });
+
+        // Load community tips
+        async function loadCommunityTips() {
+            try {
+                const tipsSnapshot = await db.collection('tips')
+                    .orderBy('createdAt', 'desc')
+                    .limit(5)
+                    .get();
+                
+                tipsList.innerHTML = '';
+                
+                if (tipsSnapshot.empty) {
+                    tipsList.innerHTML = '<p>No tips yet. Be the first to share!</p>';
+                    return;
+                }
+                
+                tipsSnapshot.forEach(doc => {
+                    const tip = doc.data();
+                    const tipElement = document.createElement('div');
+                    tipElement.className = 'tip-item';
+                    tipElement.innerHTML = `
+                        <p><strong>${tip.userEmail}:</strong> ${tip.text}</p>
+                        <small>${new Date(tip.createdAt?.toDate()).toLocaleDateString()}</small>
+                    `;
+                    tipsList.appendChild(tipElement);
+                });
+            } catch (error) {
+                console.error('Error loading tips:', error);
+            }
+        }
+
+        // Update community stats display
+        function updateCommunityStats() {
+            animateCounter('plasticReduced', 0, communityStats.plastic, 1500);
+            animateCounter('co2Reduced', 0, communityStats.co2, 1500);
+            animateCounter('waterSaved', 0, communityStats.water, 1500);
+            animateCounter('treesPlanted', 0, communityStats.trees, 1500);
+        }
+
+        // Initialize community stats from Firestore
+        async function initCommunityStats() {
+            try {
+                const statsDoc = await db.collection('stats').doc('community').get();
+                if (statsDoc.exists) {
+                    const stats = statsDoc.data();
+                    communityStats = { ...communityStats, ...stats };
+                } else {
+                    // Create initial stats document
+                    await db.collection('stats').doc('community').set(communityStats);
+                }
+                updateCommunityStats();
+            } catch (error) {
+                console.error('Error loading community stats:', error);
+            }
+        }
+
+        // Show message
+        function showMessage(text, type) {
+            // Create message element
+            const message = document.createElement('div');
+            message.textContent = text;
+            message.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 3000;
+                animation: slideIn 0.3s ease;
+                background-color: ${type === 'success' ? 'var(--success)' : 
+                               type === 'error' ? 'var(--error)' : 'var(--primary)'};
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            `;
+            
+            document.body.appendChild(message);
+            
+            // Remove message after 4 seconds
+            setTimeout(() => {
+                message.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(message);
+                }, 300);
+            }, 4000);
+        }
+
+        // Animated counter (from original code)
+        function animateCounter(id, start, end, duration) {
+            let obj = document.getElementById(id);
+            let startTime = null;
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                obj.innerHTML = value.toLocaleString();
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Event Listeners
+        loginBtn.addEventListener('click', openAuthModal);
+        heroLoginBtn.addEventListener('click', openAuthModal);
+        closeModal.addEventListener('click', closeAuthModal);
+        authModal.addEventListener('click', (e) => {
+            if (e.target === authModal) closeAuthModal();
+        });
+
+        // Mobile Menu Toggle (from original code)
+        document.querySelector('.mobile-menu').addEventListener('click', function() {
+            document.querySelector('.nav-links').classList.toggle('active');
+        });
+
+        // Close mobile menu when clicking a link
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', () => {
+                document.querySelector('.nav-links').classList.remove('active');
+            });
+        });
+
+        // Challenge Functionality (from original code)
+        const joinBtn = document.getElementById('joinChallenge');
+        const progressBar = document.getElementById('challengeProgress');
+        const statusText = document.getElementById('challengeStatus');
+        let challengeStarted = false;
+        let progress = 0;
+
+        joinBtn.addEventListener('click', async function() {
+            if (!currentUser) {
+                showMessage('Please login to join the challenge', 'error');
+                return;
+            }
+            
+            if (!challengeStarted) {
+                challengeStarted = true;
+                statusText.textContent = "Day 1: Use a reusable water bottle!";
+                joinBtn.textContent = "Mark as Complete";
+                
+                // Animate progress
+                let width = 0;
+                const interval = setInterval(() => {
+                    if (width >= 10) {
+                        clearInterval(interval);
+                    } else {
+                        width++;
+                        progressBar.style.width = width + '%';
+                    }
+                }, 30);
+                
+                // Save challenge start to Firestore
+                try {
+                    await db.collection('users').doc(currentUser.uid).update({
+                        challengeStarted: true,
+                        challengeDay: 1
+                    });
+                } catch (error) {
+                    console.error('Error saving challenge:', error);
+                }
+            } else {
+                // Mark day as complete
+                if (progress < 100) {
+                    progress += 10;
+                    progressBar.style.width = progress + '%';
+                    
+                    const days = progress / 10;
+                    statusText.textContent = `Completed ${days} of 30 days!`;
+                    
+                    // Update challenge progress in Firestore
+                    try {
+                        await db.collection('users').doc(currentUser.uid).update({
+                            challengeProgress: progress,
+                            challengeDay: days + 1
+                        });
+                    } catch (error) {
+                        console.error('Error updating challenge:', error);
+                    }
+                    
+                    if (progress === 100) {
+                        statusText.textContent = "Congratulations! You completed the 30-day challenge!";
+                        joinBtn.textContent = "Challenge Completed";
+                        joinBtn.disabled = true;
+                        joinBtn.style.opacity = "0.7";
+                    } else {
+                        const nextDay = days + 1;
+                        const challenges = [
+                            "Bring your own shopping bags",
+                            "Take a 5-minute shorter shower",
+                            "Unplug unused electronics",
+                            "Meat-free day",
+                            "Use public transport or bike",
+                            "Start a compost bin",
+                            "Fix a water leak",
+                            "Plant a tree or indoor plant",
+                            "Buy local produce",
+                            "Use cold water for laundry"
+                        ];
+                        const randomChallenge = challenges[Math.floor(Math.random() * challenges.length)];
+                        statusText.textContent = `Day ${nextDay}: ${randomChallenge}`;
+                    }
+                }
+            }
+        });
+
+        // Smooth scrolling for anchor links (from original code)
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Firebase Auth State Observer
+        auth.onAuthStateChanged((user) => {
+            currentUser = user;
+            updateUIForUser();
+        });
+
+        // Initialize the app
+        function initApp() {
+            // Check if user is already logged in
+            const user = auth.currentUser;
+            if (user) {
+                currentUser = user;
+                updateUIForUser();
+            }
+            
+            // Initialize community stats
+            initCommunityStats();
+            
+            // Load community tips
+            loadCommunityTips();
+            
+            // Add CSS for message animations
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+                .tip-item {
+                    background-color: #f9f9f9;
+                    padding: 10px;
+                    margin: 10px 0;
+                    border-radius: 5px;
+                    border-left: 4px solid var(--primary);
+                }
+                .tip-item p {
+                    margin-bottom: 5px;
+                }
+                .tip-item small {
+                    color: #777;
+                }
+            `;
+            document.head.appendChild(style);
+            
+            console.log('EcoLife app initialized with Firebase!');
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
